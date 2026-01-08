@@ -1,0 +1,63 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>com.xiaomi.imybatis</id>
+    <name>imybatis</name>
+    <vendor>Xiaomi</vendor>
+
+    <description><![CDATA[
+    imybatis - IntelliJ Platform plugin for MyBatis/MyBatis Plus development.
+    Provides code navigation, intelligent code completion, semantic validation, and code generation capabilities.
+    ]]></description>
+
+    <change-notes><![CDATA[
+    Initial release of imybatis plugin.
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <resource-bundle>messages.ImybatisBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Index extensions -->
+        <fileBasedIndex implementation="com.xiaomi.imybatis.core.index.MapperIndexExtension"/>
+        <fileBasedIndex implementation="com.xiaomi.imybatis.core.index.XmlIndexExtension"/>
+        <fileBasedIndex implementation="com.xiaomi.imybatis.core.index.EntityIndexExtension"/>
+        
+        <!-- Navigation providers -->
+        <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.MapperNavigationProvider"/>
+        <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.XmlNavigationProvider"/>
+        <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.EntityNavigationProvider"/>
+        
+        <!-- Completion contributors -->
+        <completion.contributor language="XML" implementationClass="com.xiaomi.imybatis.core.completion.ParameterCompletionContributor"/>
+        <completion.contributor language="XML" implementationClass="com.xiaomi.imybatis.core.completion.TypeCompletionContributor"/>
+        <completion.contributor language="XML" implementationClass="com.xiaomi.imybatis.core.completion.SqlCompletionContributor"/>
+        
+        <!-- Inspections -->
+        <localInspection language="XML" shortName="MyBatisInspection" 
+                        displayName="MyBatis Inspection" 
+                        groupName="MyBatis"
+                        implementationClass="com.xiaomi.imybatis.core.inspection.MyBatisInspection"
+                        enabledByDefault="true"/>
+        
+        <!-- MyBatis Plus support -->
+        <completion.contributor language="JAVA" implementationClass="com.xiaomi.imybatis.plus.WrapperSupport"/>
+        
+        <!-- Settings -->
+        <applicationConfigurable 
+            parentId="tools" 
+            instance="com.xiaomi.imybatis.settings.MyBatisSettingsConfigurable"
+            id="com.xiaomi.imybatis.settings"
+            displayName="imybatis"/>
+    </extensions>
+    
+    <actions>
+        <action id="imybatis.GenerateCode" 
+                class="com.xiaomi.imybatis.actions.GenerateCodeAction"
+                text="生成 MyBatis 代码"
+                description="打开代码生成向导">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
