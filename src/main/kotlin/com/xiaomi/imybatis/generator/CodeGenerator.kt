@@ -21,9 +21,7 @@ class CodeGenerator(
      * Generate all code for a table
      */
     fun generateAll(
-        connection: Connection,
         tableName: String,
-        schema: String?,
         basePackage: String,
         entityPackage: String,
         mapperPackage: String,
@@ -35,7 +33,7 @@ class CodeGenerator(
         generateController: Boolean = false,
         useMyBatisPlus: Boolean = true
     ): GeneratedCode {
-        val tableMetadata = metadataProvider.getTableMetadata(connection, tableName, schema)
+        val tableMetadata = metadataProvider.getTableMetadata(tableName)
             ?: throw IllegalArgumentException("Table not found: $tableName")
 
         val entityCode = entityGenerator.generate(

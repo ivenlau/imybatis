@@ -28,12 +28,24 @@ data class ColumnMetadata(
 /**
  * Provider for database metadata
  */
-class MetadataProvider(private val dialect: DatabaseDialect) {
+interface MetadataProvider {
+    fun getTables(): List<String>
+    fun getTableMetadata(tableName: String): TableMetadata?
+}
+
+/**
+ * JDBC implementation of MetadataProvider
+ */
+class JdbcMetadataProvider(
+    private val connection: Connection,
+    private val dialect: DatabaseDialect,
+    private val schema: String? = null
+) : MetadataProvider {
 
     /**
      * Get tables from database
      */
-    fun getTables(connection: Connection, schema: String? = null): List<String> {
+    override fun getTables(): List<String> {
         val query = dialect.getTableMetadataQuery(schema)
         val statement = connection.createStatement()
         val resultSet = statement.executeQuery(query)
@@ -51,7 +63,7 @@ class MetadataProvider(private val dialect: DatabaseDialect) {
     /**
      * Get table metadata
      */
-    fun getTableMetadata(connection: Connection, tableName: String, schema: String? = null): TableMetadata? {
+    override fun getTableMetadata(tableName: String): TableMetadata? {
         val query = dialect.getColumnMetadataQuery(schema, tableName)
         val statement = connection.createStatement()
         val resultSet = statement.executeQuery(query)
@@ -61,11 +73,11 @@ class MetadataProvider(private val dialect: DatabaseDialect) {
         while (resultSet.next()) {
             val columnName = resultSet.getString("COLUMN_NAME") ?: resultSet.getString("column_name")
             val dataType = resultSet.getString("DATA_TYPE") ?: resultSet.getString("data_type")
-            val typeName = resultSet.getString("COLUMN_TYPE") 
-                ?: resultSet.getString("udt_name") 
+            val typeName = resultSet.getString("COLUMN_TYPE")
+                ?: resultSet.getString("udt_name")
                 ?: dataType
             val nullable = (resultSet.getString("IS_NULLABLE") ?: resultSet.getString("is_nullable")) == "YES"
-            val isPrimaryKey = resultSet.getBoolean("is_primary_key") 
+            val isPrimaryKey = resultSet.getBoolean("is_primary_key")
                 || (resultSet.getString("COLUMN_KEY") ?: "").contains("PRI")
 
             val comment = try {
@@ -122,12 +134,5 @@ class MetadataProvider(private val dialect: DatabaseDialect) {
             type.contains("BLOB") || type.contains("BYTEA") -> java.sql.Types.BLOB
             else -> java.sql.Types.VARCHAR
         }
-    }
-
-    /**
-     * Convert column type to Java type
-     */
-    fun columnTypeToJavaType(columnMetadata: ColumnMetadata): String {
-        return dialect.jdbcTypeToJavaType(columnMetadata.jdbcType, columnMetadata.type)
     }
 }

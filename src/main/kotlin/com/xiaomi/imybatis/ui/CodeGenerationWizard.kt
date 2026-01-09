@@ -84,6 +84,49 @@ class CodeGenerationWizard(
         init()
     }
 
+    fun setInitialState(provider: MetadataProvider, tables: List<String> = emptyList()) {
+        this.metadataProvider = provider
+
+        // Populate table list
+        try {
+            val allTables = provider.getTables()
+            tableListModel.rowCount = 0
+            allTables.forEach { table ->
+                tableListModel.addRow(arrayOf(table))
+            }
+
+            if (tables.isNotEmpty()) {
+                this.selectedTables.clear()
+                this.selectedTables.addAll(tables)
+
+                // Select rows in tableList
+                val selectionModel = tableList.selectionModel
+                selectionModel.clearSelection()
+                tables.forEach { table ->
+                    val index = (0 until tableListModel.rowCount).find {
+                        tableListModel.getValueAt(it, 0) == table
+                    }
+                    if (index != null) {
+                        selectionModel.addSelectionInterval(index, index)
+                    }
+                }
+
+                // Skip to configuration step
+                showStep(2)
+            } else {
+                // Skip to table selection step
+                showStep(1)
+            }
+        } catch (e: Exception) {
+            JOptionPane.showMessageDialog(
+                contentPanel,
+                "无法获取表信息: ${e.message}",
+                "错误",
+                JOptionPane.ERROR_MESSAGE
+            )
+        }
+    }
+
     private fun setupUI() {
         mainPanel.removeAll()
         mainPanel.layout = BorderLayout()
@@ -455,10 +498,10 @@ class CodeGenerationWizard(
             }
             
             connection = DriverManager.getConnection(fullUrl, username, password)
-            metadataProvider = MetadataProvider(dialect)
-            
-            val tables = metadataProvider!!.getTables(connection!!, null)
-            
+            metadataProvider = JdbcMetadataProvider(connection!!, dialect)
+
+            val tables = metadataProvider!!.getTables()
+
             tableListModel.rowCount = 0
             tables.forEach { table ->
                 tableListModel.addRow(arrayOf(table))
@@ -474,25 +517,62 @@ class CodeGenerationWizard(
     }
     
     private fun generatePreview() {
-        if (selectedTables.isEmpty() || connection == null || metadataProvider == null) {
+        if (selectedTables.isEmpty() || metadataProvider == null) {
             previewTextArea.text = "请先完成前面的步骤"
             return
         }
-        
+
         val preview = StringBuilder()
+
+        // Generate file tree preview
+        preview.append("=== 生成文件预览 ===\n\n")
+        val filePaths = mutableListOf<String>()
+
+        selectedTables.forEach { tableName ->
+            val className = tableNameToClassName(tableName)
+
+            // Entity
+            val entityPackage = "${basePackageField.text}.${entityPackageField.text}"
+            filePaths.add("src/main/java/${entityPackage.replace('.', '/')}/$className.java")
+
+            // Mapper
+            val mapperPackage = "${basePackageField.text}.${mapperPackageField.text}"
+            filePaths.add("src/main/java/${mapperPackage.replace('.', '/')}/${className}Mapper.java")
+
+            // XML
+            val xmlPackage = "${basePackageField.text}.${xmlPackageField.text}"
+            filePaths.add("src/main/resources/${xmlPackage.replace('.', '/')}/${className}Mapper.xml")
+
+            // Service
+            if (generateServiceCheckBox.isSelected) {
+                val servicePackage = "${basePackageField.text}.${servicePackageField.text}"
+                filePaths.add("src/main/java/${servicePackage.replace('.', '/')}/I${className}Service.java")
+                filePaths.add("src/main/java/${servicePackage.replace('.', '/')}/impl/${className}ServiceImpl.java")
+            }
+
+            // Controller
+            if (generateControllerCheckBox.isSelected) {
+                val controllerPackage = "${basePackageField.text}.${controllerPackageField.text}"
+                filePaths.add("src/main/java/${controllerPackage.replace('.', '/')}/${className}Controller.java")
+            }
+        }
+
+        val selectedModule = moduleComboBox.selectedItem as? Module
+        val rootName = selectedModule?.name ?: project.name
+        preview.append(generateTreeStructure(filePaths, rootName))
+        preview.append("\n\n")
+
         val codeGenerator = CodeGenerator(templateEngine, metadataProvider!!)
-        
+
         selectedTables.forEach { tableName ->
             preview.append("=== $tableName ===\n\n")
-            
+
             try {
-                val tableMetadata = metadataProvider!!.getTableMetadata(connection!!, tableName, null)
+                val tableMetadata = metadataProvider!!.getTableMetadata(tableName)
                 if (tableMetadata != null) {
                     val className = tableNameToClassName(tableName)
                     val generatedCode = codeGenerator.generateAll(
-                        connection = connection!!,
                         tableName = tableName,
-                        schema = null,
                         basePackage = basePackageField.text,
                         entityPackage = "${basePackageField.text}.${entityPackageField.text}",
                         mapperPackage = "${basePackageField.text}.${mapperPackageField.text}",
@@ -506,7 +586,7 @@ class CodeGenerationWizard(
                     )
 
                     generatedCodes[tableName] = generatedCode
-                    
+
                     preview.append("Entity:\n${generatedCode.entity}\n\n")
                     preview.append("Mapper:\n${generatedCode.mapper}\n\n")
                     preview.append("XML:\n${generatedCode.xml}\n\n")
@@ -516,8 +596,73 @@ class CodeGenerationWizard(
                 preview.append("堆栈跟踪:\n${e.stackTraceToString()}\n\n")
             }
         }
-        
+
         previewTextArea.text = preview.toString()
+        previewTextArea.caretPosition = 0
+    }
+
+    private fun generateTreeStructure(paths: List<String>, rootName: String): String {
+        val root = Node(rootName)
+
+        for (path in paths) {
+            var current = root
+            val parts = path.split("/")
+            for (part in parts) {
+                var child = current.children.find { it.name == part }
+                if (child == null) {
+                    child = Node(part)
+                    current.children.add(child)
+                }
+                current = child
+            }
+        }
+
+        // Compact tree (fold empty packages)
+        // We apply compaction to children of root to keep root name distinct
+        root.children.forEach { compactTree(it) }
+
+        val sb = StringBuilder()
+        printTree(root, "", sb)
+        return sb.toString()
+    }
+
+    private fun compactTree(node: Node) {
+        // Recursively compact children first
+        node.children.forEach { compactTree(it) }
+
+        // Compact current node if it has exactly one child and that child is a directory (has children)
+        while (node.children.size == 1 && node.children[0].children.isNotEmpty()) {
+            val child = node.children[0]
+            node.name = "${node.name}.${child.name}"
+            node.children.clear()
+            node.children.addAll(child.children)
+        }
+    }
+
+    private fun printTree(node: Node, prefix: String, sb: StringBuilder) {
+        // Print root node first (if it's the top level call)
+        if (prefix.isEmpty()) {
+            sb.append(node.name).append("\n")
+        }
+
+        val sortedChildren = node.children.sortedWith(compareBy({ it.children.isEmpty() }, { it.name }))
+
+        for (i in sortedChildren.indices) {
+            val child = sortedChildren[i]
+            val isLast = i == sortedChildren.size - 1
+
+            sb.append(prefix)
+            sb.append(if (isLast) "└── " else "├── ")
+            sb.append(child.name)
+            sb.append("\n")
+
+            val newPrefix = prefix + (if (isLast) "    " else "│   ")
+            printTree(child, newPrefix, sb)
+        }
+    }
+
+    private class Node(var name: String) {
+        val children = mutableListOf<Node>()
     }
     
     private fun tableNameToClassName(tableName: String): String {
@@ -626,7 +771,7 @@ class CodeGenerationWizard(
     }
     
     private fun generateCode() {
-        if (connection == null || metadataProvider == null || selectedTables.isEmpty()) {
+        if (metadataProvider == null || selectedTables.isEmpty()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
                 "无法生成代码：缺少必要信息",
@@ -660,9 +805,7 @@ class CodeGenerationWizard(
             try {
                 val className = tableNameToClassName(tableName)
                 val generatedCode = codeGenerator.generateAll(
-                    connection = connection!!,
                     tableName = tableName,
-                    schema = null,
                     basePackage = basePackageField.text,
                     entityPackage = "${basePackageField.text}.${entityPackageField.text}",
                     mapperPackage = "${basePackageField.text}.${mapperPackageField.text}",

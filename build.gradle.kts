@@ -34,6 +34,7 @@ dependencies {
     // Test dependencies
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
+    testImplementation(kotlin("test"))
 
     // Template engine for code generation
     implementation(libs.freemarker)

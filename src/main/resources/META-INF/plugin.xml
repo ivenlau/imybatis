@@ -15,6 +15,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends optional="true" config-file="imybatis-database.xml">com.intellij.database</depends>
 
     <resource-bundle>messages.ImybatisBundle</resource-bundle>
 
@@ -53,7 +54,7 @@
     </extensions>
     
     <actions>
-        <action id="imybatis.GenerateCode" 
+        <action id="imybatis.GenerateCode"
                 class="com.xiaomi.imybatis.actions.GenerateCodeAction"
                 text="生成 MyBatis 代码"
                 description="打开代码生成向导">
