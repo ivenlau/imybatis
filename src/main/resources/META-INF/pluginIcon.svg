@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- Background - rounded rectangle 36x36 centered, gray -->
+  <rect x="2" y="2" width="36" height="36" fill="#e0e0e0" rx="6"/>
+
+  <!-- MyBatis Pencil - left side, centered -->
+  <g transform="translate(0, 0)">
+    <!-- Tip -->
+    <rect x="10"  y="30" width="1" height="1" fill="#4A0000"/>
+    <rect x="9"  y="29" width="2" height="1" fill="#8B0000"/>
+    <rect x="8"  y="28" width="4" height="1" fill="#B71C1C"/>
+    <!-- Body -->
+    <rect x="7"  y="23" width="6" height="5" fill="#D32F2F"/>
+    <rect x="7"  y="19" width="6" height="4" fill="#D32F2F"/>
+    <rect x="7"  y="15" width="6" height="4" fill="#D32F2F"/>
+    <!-- Shadow (left) -->
+    <rect x="7"  y="23" width="1" height="5" fill="#8B0000"/>
+    <rect x="7"  y="19" width="1" height="4" fill="#8B0000"/>
+    <rect x="7"  y="15" width="1" height="4" fill="#8B0000"/>
+    <!-- Highlight (right) -->
+    <rect x="11"  y="27" width="1" height="1" fill="#FF8A80"/>
+    <rect x="11"  y="23" width="1" height="5" fill="#FFCDD2"/>
+    <rect x="11"  y="19" width="1" height="4" fill="#FFCDD2"/>
+    <rect x="11"  y="15" width="1" height="4" fill="#FFCDD2"/>
+    <!-- Metal clip -->
+    <rect x="7"  y="14" width="6" height="1" fill="#FF8F00"/>
+    <rect x="7"  y="13" width="6" height="1" fill="#FFD54F"/>
+    <rect x="7"  y="12" width="6" height="1" fill="#FF8F00"/>
+    <!-- Top button -->
+    <rect x="8"  y="11" width="4" height="1" fill="#616161"/>
+    <rect x="8"  y="10" width="4" height="1" fill="#757575"/>
+    <rect x="8"  y="9"  width="4" height="1" fill="#757575"/>
+    <rect x="9"  y="8"  width="2" height="1" fill="#9E9E9E"/>
+  </g>
+
+  <!-- "MyBatis" text - red text elements, centered with 4px gap -->
+  <text x="16" y="17" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#D32F2F">My</text>
+  <text x="16" y="27" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#D32F2F">Batis</text>
+</svg>
