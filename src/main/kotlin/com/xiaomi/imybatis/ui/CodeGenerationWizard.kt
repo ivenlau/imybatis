@@ -16,6 +16,7 @@ import com.intellij.util.ui.JBUI
 import com.xiaomi.imybatis.database.*
 import com.xiaomi.imybatis.generator.CodeGenerator
 import com.xiaomi.imybatis.generator.GeneratedCode
+import com.xiaomi.imybatis.ImybatisBundle
 import com.xiaomi.imybatis.template.TemplateEngine
 import org.jetbrains.jps.model.java.JavaSourceRootType
 import java.awt.BorderLayout
@@ -37,7 +38,13 @@ class CodeGenerationWizard(
 ) : DialogWrapper(project) {
 
     private var currentStep = 0
-    private val steps = listOf("数据源", "选择表", "配置", "预览", "生成")
+    private val steps = listOf(
+        ImybatisBundle.message("wizard.step.dataSource"),
+        ImybatisBundle.message("wizard.step.selectTable"),
+        ImybatisBundle.message("wizard.step.configuration"),
+        ImybatisBundle.message("wizard.step.preview"),
+        ImybatisBundle.message("wizard.step.generate")
+    )
 
     // Step 1: Data source
     private val dataSourceUrlField = JTextField()
@@ -47,24 +54,24 @@ class CodeGenerationWizard(
     private val dialectComboBox = JComboBox<String>(arrayOf("MySQL", "PostgreSQL"))
 
     // Step 2: Table selection
-    private val tableListModel = DefaultTableModel(arrayOf("表名"), 0)
+    private val tableListModel = DefaultTableModel(arrayOf(ImybatisBundle.message("completion.column.name")), 0)
     private val tableList = JBTable(tableListModel)
 
     // Step 3: Configuration
     private val moduleComboBox = ComboBox<Module>()
-    private val basePackageField = PackageNameReferenceEditorCombo("com.example", project, "RecentPackage", "基础包名")
+    private val basePackageField = PackageNameReferenceEditorCombo("com.example", project, "RecentPackage", ImybatisBundle.message("wizard.config.basePackage"))
     private val entityPackageField = JTextField("entity")
     private val mapperPackageField = JTextField("mapper")
     private val xmlPackageField = JTextField("mapper")
     private val servicePackageField = JTextField("service")
     private val controllerPackageField = JTextField("controller")
-    private val generateServiceCheckBox = JCheckBox("生成 Service", true)
-    private val generateControllerCheckBox = JCheckBox("生成 Controller", false)
-    private val useLombokCheckBox = JCheckBox("使用 Lombok", true)
-    private val useMyBatisPlusCheckBox = JCheckBox("使用 MyBatis Plus", true)
-    private val generateBatchOperationsCheckBox = JCheckBox("批量操作", false)
-    private val generateInsertOnDuplicateUpdateCheckBox = JCheckBox("插入时更新", false)
-    private val useLocalDateTimeCheckBox = JCheckBox("使用 LocalDateTime", true)
+    private val generateServiceCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.generateService"), true)
+    private val generateControllerCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.generateController"), false)
+    private val useLombokCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.useLombok"), true)
+    private val useMyBatisPlusCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.useMyBatisPlus"), true)
+    private val generateBatchOperationsCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.generateBatchOperations"), false)
+    private val generateInsertOnDuplicateUpdateCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.generateInsertOnDuplicateUpdate"), false)
+    private val useLocalDateTimeCheckBox = JCheckBox(ImybatisBundle.message("wizard.config.useLocalDateTime"), true)
 
     // Step 4: Preview
     private val previewTextArea = JTextArea()
@@ -80,7 +87,7 @@ class CodeGenerationWizard(
     private val mainPanel = JBPanel<JBPanel<*>>(BorderLayout())
     private val stepContentPanel = createStepContent()
     init {
-        title = "imybatis 代码生成向导"
+        title = ImybatisBundle.message("wizard.title")
 
         // Initialize UI before DialogWrapper setup to avoid self-addition
         setupUI()
@@ -123,8 +130,8 @@ class CodeGenerationWizard(
         } catch (e: Exception) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "无法获取表信息: ${e.message}",
-                "错误",
+                ImybatisBundle.message("error.mapper.not.found") + ": ${e.message}",
+                ImybatisBundle.message("error.mapper.not.found"),
                 JOptionPane.ERROR_MESSAGE
             )
         }
@@ -170,17 +177,17 @@ class CodeGenerationWizard(
             Class.forName(driverClassName)
             loadedDrivers.add(driverClassName)
         } catch (e: ClassNotFoundException) {
-            throw IllegalStateException("找不到数据库驱动: $driverClassName", e)
+            throw IllegalStateException("Database driver not found: $driverClassName", e)
         }
     }
 
     private fun createButtonPanel(): JPanel {
         val panel = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.RIGHT, 10, 10))
-        
-        val prevButton = JButton("上一步")
+
+        val prevButton = JButton(ImybatisBundle.message("wizard.button.previous"))
         prevButton.addActionListener { previousStep() }
-        
-        val nextButton = JButton("下一步")
+
+        val nextButton = JButton(ImybatisBundle.message("wizard.button.next"))
         nextButton.addActionListener { nextStep() }
         
         panel.add(prevButton)
@@ -217,66 +224,66 @@ class CodeGenerationWizard(
             insets = JBUI.insets(5)
             anchor = GridBagConstraints.WEST
         }
-        
+
         gbc.gridx = 0
         gbc.gridy = 0
-        panel.add(JBLabel("数据库 URL:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.dataSource.url") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         dataSourceUrlField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(dataSourceUrlField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = 1
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("用户名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.dataSource.username") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         usernameField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(usernameField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = 2
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("密码:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.dataSource.password") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         passwordField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(passwordField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = 3
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("数据库名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.dataSource.database") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         databaseField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(databaseField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = 4
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("数据库类型:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.dataSource.dialect") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         panel.add(dialectComboBox, gbc)
-        
+
         return panel
     }
-    
+
     private fun createTableSelectionStep(): JPanel {
         val panel = JBPanel<JBPanel<*>>(BorderLayout())
-        
-        val label = JBLabel("选择要生成代码的表:")
+
+        val label = JBLabel(ImybatisBundle.message("wizard.step.selectTable") + ":")
         panel.add(label, BorderLayout.NORTH)
         
         tableList.selectionModel.selectionMode = ListSelectionModel.MULTIPLE_INTERVAL_SELECTION
@@ -301,7 +308,7 @@ class CodeGenerationWizard(
         // Module selection
         gbc.gridx = 0
         gbc.gridy = row++
-        panel.add(JBLabel("模块:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.module") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
@@ -338,7 +345,7 @@ class CodeGenerationWizard(
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("基础包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.basePackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
@@ -349,51 +356,51 @@ class CodeGenerationWizard(
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("Entity 包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.entityPackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         entityPackageField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(entityPackageField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("Mapper 包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.mapperPackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         mapperPackageField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(mapperPackageField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("XML 包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.xmlPackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         xmlPackageField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(xmlPackageField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("Service 包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.servicePackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         servicePackageField.preferredSize = java.awt.Dimension(300, 25)
         panel.add(servicePackageField, gbc)
-        
+
         gbc.gridx = 0
         gbc.gridy = row++
         gbc.fill = GridBagConstraints.NONE
         gbc.weightx = 0.0
-        panel.add(JBLabel("Controller 包名:"), gbc)
+        panel.add(JBLabel(ImybatisBundle.message("wizard.config.controllerPackage") + ":"), gbc)
         gbc.gridx = 1
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
@@ -468,8 +475,8 @@ class CodeGenerationWizard(
 
     private fun createPreviewStep(): JPanel {
         val panel = JBPanel<JBPanel<*>>(BorderLayout())
-        
-        val label = JBLabel("代码预览:")
+
+        val label = JBLabel(ImybatisBundle.message("wizard.step.preview") + ":")
         panel.add(label, BorderLayout.NORTH)
         
         previewTextArea.isEditable = false
@@ -485,7 +492,7 @@ class CodeGenerationWizard(
     
     private fun createGenerationStep(): JPanel {
         val panel = JBPanel<JBPanel<*>>(BorderLayout())
-        panel.add(JBLabel("代码生成完成！"), BorderLayout.CENTER)
+        panel.add(JBLabel("Code generation completed!"), BorderLayout.CENTER)
         return panel
     }
     
@@ -526,23 +533,23 @@ class CodeGenerationWizard(
         } catch (e: Exception) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "连接数据库失败: ${e.message}",
-                "错误",
+                ImybatisBundle.message("error.connection.failed", e.message ?: ""),
+                "Error",
                 JOptionPane.ERROR_MESSAGE
             )
         }
     }
-    
+
     private fun generatePreview() {
         if (selectedTables.isEmpty() || metadataProvider == null) {
-            previewTextArea.text = "请先完成前面的步骤"
+            previewTextArea.text = "Please complete previous steps first"
             return
         }
 
         val preview = StringBuilder()
 
         // Generate file tree preview
-        preview.append("=== 生成文件预览 ===\n\n")
+        preview.append("=== Generated Files Preview ===\n\n")
         val filePaths = mutableListOf<String>()
 
         selectedTables.forEach { tableName ->
@@ -613,8 +620,8 @@ class CodeGenerationWizard(
                     preview.append("XML:\n${generatedCode.xml}\n\n")
                 }
             } catch (e: Exception) {
-                preview.append("生成失败: ${e.message}\n\n")
-                preview.append("堆栈跟踪:\n${e.stackTraceToString()}\n\n")
+                preview.append("Generation failed: ${e.message}\n\n")
+                preview.append("Stack trace:\n${e.stackTraceToString()}\n\n")
             }
         }
 
@@ -717,8 +724,8 @@ class CodeGenerationWizard(
                 if (selectedTables.isEmpty()) {
                     JOptionPane.showMessageDialog(
                         contentPanel,
-                        "请至少选择一个表",
-                        "提示",
+                        ImybatisBundle.message("error.no.table.selected"),
+                        "Tip",
                         JOptionPane.INFORMATION_MESSAGE
                     )
                 } else {
@@ -747,56 +754,56 @@ class CodeGenerationWizard(
         if (dataSourceUrlField.text.isBlank()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "请输入数据库 URL",
-                "验证失败",
+                "Please enter database URL",
+                "Validation Failed",
                 JOptionPane.WARNING_MESSAGE
             )
             return false
         }
-        
+
         if (usernameField.text.isBlank()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "请输入用户名",
-                "验证失败",
+                "Please enter username",
+                "Validation Failed",
                 JOptionPane.WARNING_MESSAGE
             )
             return false
         }
-        
+
         if (databaseField.text.isBlank()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "请输入数据库名",
-                "验证失败",
+                "Please enter database name",
+                "Validation Failed",
                 JOptionPane.WARNING_MESSAGE
             )
             return false
         }
-        
+
         return true
     }
-    
+
     private fun validateConfiguration(): Boolean {
         if (basePackageField.text.isBlank()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "请输入基础包名",
-                "验证失败",
+                "Please enter base package name",
+                "Validation Failed",
                 JOptionPane.WARNING_MESSAGE
             )
             return false
         }
-        
+
         return true
     }
-    
+
     private fun generateCode() {
         if (metadataProvider == null || selectedTables.isEmpty()) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "无法生成代码：缺少必要信息",
-                "错误",
+                "Cannot generate code: missing required information",
+                "Error",
                 JOptionPane.ERROR_MESSAGE
             )
             return
@@ -812,8 +819,8 @@ class CodeGenerationWizard(
         if (javaSourceRoot == null || resourcesRoot == null) {
             JOptionPane.showMessageDialog(
                 contentPanel,
-                "无法找到或创建源代码目录",
-                "错误",
+                "Cannot find or create source directory",
+                "Error",
                 JOptionPane.ERROR_MESSAGE
             )
             return
@@ -906,15 +913,15 @@ class CodeGenerationWizard(
         }
 
         val message = if (failCount == 0) {
-            "成功生成 $successCount 个表的代码！"
+            "Successfully generated code for $successCount tables!"
         } else {
-            "成功生成 $successCount 个表的代码，失败 $failCount 个"
+            "Generated code for $successCount tables, failed $failCount"
         }
 
         JOptionPane.showMessageDialog(
             contentPanel,
             message,
-            if (failCount == 0) "成功" else "部分成功",
+            if (failCount == 0) "Success" else "Partial Success",
             if (failCount == 0) JOptionPane.INFORMATION_MESSAGE else JOptionPane.WARNING_MESSAGE
         )
     }

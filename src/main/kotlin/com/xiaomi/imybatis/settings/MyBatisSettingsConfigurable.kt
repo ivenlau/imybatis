@@ -5,6 +5,7 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
+import com.xiaomi.imybatis.ImybatisBundle
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -14,14 +15,14 @@ import javax.swing.JPanel
 class MyBatisSettingsConfigurable : Configurable {
 
     private val settings = MyBatisSettings.getInstance()
-    
-    private val enableNavigationCheckBox = JBCheckBox("启用代码导航")
-    private val enableCompletionCheckBox = JBCheckBox("启用代码补全")
-    private val enableInspectionCheckBox = JBCheckBox("启用代码检查")
-    private val indexOnStartupCheckBox = JBCheckBox("启动时自动索引")
+
+    private val enableNavigationCheckBox = JBCheckBox(ImybatisBundle.message("settings.enableNavigation"))
+    private val enableCompletionCheckBox = JBCheckBox(ImybatisBundle.message("settings.enableCompletion"))
+    private val enableInspectionCheckBox = JBCheckBox(ImybatisBundle.message("settings.enableInspection"))
+    private val indexOnStartupCheckBox = JBCheckBox(ImybatisBundle.message("settings.indexOnStartup"))
     private val maxIndexTimeField = JBTextField()
 
-    override fun getDisplayName(): String = "imybatis"
+    override fun getDisplayName(): String = ImybatisBundle.message("settings.title")
 
     override fun createComponent(): JComponent {
         return FormBuilder.createFormBuilder()
@@ -29,7 +30,7 @@ class MyBatisSettingsConfigurable : Configurable {
             .addComponent(enableCompletionCheckBox)
             .addComponent(enableInspectionCheckBox)
             .addComponent(indexOnStartupCheckBox)
-            .addLabeledComponent(JBLabel("最大索引时间（秒）:"), maxIndexTimeField, 1, false)
+            .addLabeledComponent(JBLabel(ImybatisBundle.message("settings.maxIndexTime") + ":"), maxIndexTimeField, 1, false)
             .addComponentFillVertically(JPanel(), 0)
             .panel
     }
