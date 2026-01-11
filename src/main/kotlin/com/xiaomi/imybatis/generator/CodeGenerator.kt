@@ -31,7 +31,11 @@ class CodeGenerator(
         className: String,
         generateService: Boolean = true,
         generateController: Boolean = false,
-        useMyBatisPlus: Boolean = true
+        useMyBatisPlus: Boolean = true,
+        useLombok: Boolean = true,
+        generateBatchOperations: Boolean = false,
+        generateInsertOnDuplicateUpdate: Boolean = false,
+        useLocalDateTime: Boolean = true
     ): GeneratedCode {
         val tableMetadata = metadataProvider.getTableMetadata(tableName)
             ?: throw IllegalArgumentException("Table not found: $tableName")
@@ -40,8 +44,9 @@ class CodeGenerator(
             tableMetadata = tableMetadata,
             packageName = entityPackage,
             className = className,
-            useLombok = true,
-            useMyBatisPlus = useMyBatisPlus
+            useLombok = useLombok,
+            useMyBatisPlus = useMyBatisPlus,
+            useLocalDateTime = useLocalDateTime
         )
 
         val mapperCode = mapperGenerator.generate(
@@ -49,7 +54,11 @@ class CodeGenerator(
             mapperName = "${className}Mapper",
             entityName = className,
             entityPackage = entityPackage,
-            useMyBatisPlus = useMyBatisPlus
+            useMyBatisPlus = useMyBatisPlus,
+            tableMetadata = tableMetadata,
+            useLocalDateTime = useLocalDateTime,
+            generateBatchOperations = generateBatchOperations,
+            generateInsertOnDuplicateUpdate = generateInsertOnDuplicateUpdate
         )
 
         val xmlCode = xmlGenerator.generate(
@@ -58,7 +67,9 @@ class CodeGenerator(
             entityName = className,
             entityPackage = entityPackage,
             tableMetadata = tableMetadata,
-            useMyBatisPlus = useMyBatisPlus
+            useMyBatisPlus = useMyBatisPlus,
+            generateBatchOperations = generateBatchOperations,
+            generateInsertOnDuplicateUpdate = generateInsertOnDuplicateUpdate
         )
 
         val serviceCode = if (generateService) {

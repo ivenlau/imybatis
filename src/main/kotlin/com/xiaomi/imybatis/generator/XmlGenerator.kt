@@ -18,7 +18,9 @@ class XmlGenerator(private val templateEngine: TemplateEngine) {
         entityName: String,
         entityPackage: String,
         tableMetadata: TableMetadata,
-        useMyBatisPlus: Boolean = true
+        useMyBatisPlus: Boolean = true,
+        generateBatchOperations: Boolean = false,
+        generateInsertOnDuplicateUpdate: Boolean = false
     ): String {
         val primaryKeyColumns = tableMetadata.columns.filter { it.isPrimaryKey }.map {
             ColumnInfo(it.name, camelCase(it.name), it.type, it.isPrimaryKey)
@@ -39,7 +41,9 @@ class XmlGenerator(private val templateEngine: TemplateEngine) {
             "primaryKeyColumns" to primaryKeyColumns,
             "nonPrimaryKeyColumns" to nonPrimaryKeyColumns,
             "allColumns" to allColumns,
-            "useMyBatisPlus" to useMyBatisPlus
+            "useMyBatisPlus" to useMyBatisPlus,
+            "generateBatchOperations" to generateBatchOperations,
+            "generateInsertOnDuplicateUpdate" to generateInsertOnDuplicateUpdate
         )
 
         val template = getDefaultXmlTemplate()
@@ -94,11 +98,17 @@ class XmlGenerator(private val templateEngine: TemplateEngine) {
     </select>
 
     <!-- Insert -->
-    <insert id="insert" parameterType="${'$'}{entityFqn}">
+    <insert id="insert" parameterType="${'$'}{entityFqn}"<#if generateInsertOnDuplicateUpdate> useGeneratedKeys="true" keyProperty="<#list primaryKeyColumns as pk>${'$'}{pk.propertyName}<#if pk_has_next>,</#if></#list>"</#if>>
         INSERT INTO ${'$'}{tableName}
         (<#list allColumns as column>${'$'}{column.columnName}<#if column_has_next>, </#if></#list>)
         VALUES
         (<#list allColumns as column>${'$'}{"#"}{${'$'}{column.propertyName?string}}<#if column_has_next>, </#if></#list>)
+<#if generateInsertOnDuplicateUpdate>
+        ON DUPLICATE KEY UPDATE
+<#list nonPrimaryKeyColumns as column>
+        ${'$'}{column.columnName} = VALUES(${'$'}{column.columnName})<#if column_has_next>,</#if>
+</#list>
+</#if>
     </insert>
 
     <!-- Update by Primary Key -->
@@ -116,6 +126,65 @@ class XmlGenerator(private val templateEngine: TemplateEngine) {
         DELETE FROM ${'$'}{tableName}
         WHERE <#list primaryKeyColumns as pk>${'$'}{pk.columnName} = ${'$'}{"#"}{${'$'}{pk.propertyName?string}}<#if pk_has_next> AND </#if></#list>
     </delete>
+
+<#if generateBatchOperations>
+    <!-- Batch Insert -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${'$'}{tableName}
+        (<#list allColumns as column>${'$'}{column.columnName}<#if column_has_next>, </#if></#list>)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+        (<#list allColumns as column>${'$'}{"#"}{item.${'$'}{column.propertyName?string}}<#if column_has_next>, </#if></#list>)
+        </foreach>
+    </insert>
+
+<#if generateInsertOnDuplicateUpdate>
+    <!-- Batch Insert On Duplicate Update -->
+    <insert id="batchInsertOnDuplicate" parameterType="java.util.List">
+        INSERT INTO ${'$'}{tableName}
+        (<#list allColumns as column>${'$'}{column.columnName}<#if column_has_next>, </#if></#list>)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+        (<#list allColumns as column>${'$'}{"#"}{item.${'$'}{column.propertyName?string}}<#if column_has_next>, </#if></#list>)
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+<#list nonPrimaryKeyColumns as column>
+        ${'$'}{column.columnName} = VALUES(${'$'}{column.columnName})<#if column_has_next>,</#if>
+</#list>
+    </insert>
+</#if>
+
+    <!-- Batch Update -->
+    <update id="batchUpdate" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+        UPDATE ${'$'}{tableName}
+        SET
+<#list nonPrimaryKeyColumns as column>
+            ${'$'}{column.columnName} = ${'$'}{"#"}{item.${'$'}{column.propertyName?string}}<#if column_has_next>,</#if>
+</#list>
+        WHERE <#list primaryKeyColumns as pk>${'$'}{pk.columnName} = ${'$'}{"#"}{item.${'$'}{pk.propertyName?string}}<#if pk_has_next> AND </#if></#list>
+        </foreach>
+    </update>
+
+    <!-- Batch Delete -->
+    <delete id="batchDelete" parameterType="java.util.List">
+        DELETE FROM ${'$'}{tableName}
+        WHERE
+        <foreach collection="list" item="item" separator=" OR ">
+        (<#list primaryKeyColumns as pk>${'$'}{pk.columnName} = ${'$'}{"#"}{item.${'$'}{pk.propertyName?string}}<#if pk_has_next> AND </#if></#list>)
+        </foreach>
+    </delete>
+
+    <!-- Batch Delete by IDs -->
+    <delete id="batchDeleteByIds">
+        DELETE FROM ${'$'}{tableName}
+        WHERE <#list primaryKeyColumns as pk>${'$'}{pk.columnName} IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            ${'$'}{"#"}{id}
+        </foreach>
+        <#if pk_has_next> AND </#if></#list>
+    </delete>
+</#if>
 </#if>
 </mapper>
         """.trimIndent()

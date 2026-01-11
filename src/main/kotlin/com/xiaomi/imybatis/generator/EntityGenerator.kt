@@ -18,12 +18,13 @@ class EntityGenerator(private val templateEngine: TemplateEngine) {
         packageName: String,
         className: String,
         useLombok: Boolean = true,
-        useMyBatisPlus: Boolean = true
+        useMyBatisPlus: Boolean = true,
+        useLocalDateTime: Boolean = true
     ): String {
         val fields = tableMetadata.columns.map { column ->
             FieldInfo(
                 name = camelCase(column.name),
-                type = columnTypeToJavaType(column),
+                type = columnTypeToJavaType(column, useLocalDateTime),
                 columnName = column.name,
                 primaryKey = column.isPrimaryKey,
                 nullable = column.nullable,
@@ -38,6 +39,7 @@ class EntityGenerator(private val templateEngine: TemplateEngine) {
             "fields" to fields,
             "useLombok" to useLombok,
             "useMyBatisPlus" to useMyBatisPlus,
+            "useLocalDateTime" to useLocalDateTime,
             "primaryKeys" to tableMetadata.primaryKeys,
             "date" to Date()
         )
@@ -61,18 +63,18 @@ class EntityGenerator(private val templateEngine: TemplateEngine) {
     /**
      * Convert column type to Java type
      */
-    private fun columnTypeToJavaType(column: ColumnMetadata): String {
+    private fun columnTypeToJavaType(column: ColumnMetadata, useLocalDateTime: Boolean = true): String {
         return when (column.type.uppercase()) {
             "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT" -> "Integer"
             "BIGINT" -> "Long"
-            "DECIMAL", "NUMERIC" -> "java.math.BigDecimal"
+            "DECIMAL", "NUMERIC" -> "BigDecimal"
             "FLOAT", "REAL" -> "Float"
             "DOUBLE" -> "Double"
             "BOOLEAN", "BIT" -> "Boolean"
             "CHAR", "VARCHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT" -> "String"
-            "DATE" -> "java.time.LocalDate"
-            "TIME" -> "java.time.LocalTime"
-            "DATETIME", "TIMESTAMP" -> "java.time.LocalDateTime"
+            "DATE" -> if (useLocalDateTime) "LocalDate" else "Date"
+            "TIME" -> if (useLocalDateTime) "LocalTime" else "Date"
+            "DATETIME", "TIMESTAMP" -> if (useLocalDateTime) "LocalDateTime" else "Date"
             "BLOB", "BYTEA" -> "byte[]"
             else -> "String"
         }
@@ -94,11 +96,19 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableField;
 </#if>
-<#if fields?filter(f -> f.type?contains("LocalDate") || f.type?contains("LocalDateTime") || f.type?contains("LocalTime"))?size gt 0>
-import java.time.*;
+<#if fields?filter(f -> f.type == "LocalDate" || f.type == "LocalDateTime" || f.type == "LocalTime")?size gt 0>
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
 </#if>
-<#if fields?filter(f -> f.type?contains("BigDecimal"))?size gt 0>
+<#if fields?filter(f -> f.type == "Date")?size gt 0>
+import java.util.Date;
+</#if>
+<#if fields?filter(f -> f.type == "BigDecimal")?size gt 0>
 import java.math.BigDecimal;
+</#if>
+<#if fields?filter(f -> f.type == "List")?size gt 0>
+import java.util.List;
 </#if>
 
 /**
@@ -129,6 +139,18 @@ public class ${'$'}{className} {
     </#if>
     private ${'$'}{field.type} ${'$'}{field.name};
 </#list>
+<#if !useLombok>
+<#list fields as field>
+
+    public ${'$'}{field.type} get${'$'}{field.name?cap_first}() {
+        return this.${'$'}{field.name};
+    }
+
+    public void set${'$'}{field.name?cap_first}(${'$'}{field.type} ${'$'}{field.name}) {
+        this.${'$'}{field.name} = ${'$'}{field.name};
+    }
+</#list>
+</#if>
 }
         """.trimIndent()
     }

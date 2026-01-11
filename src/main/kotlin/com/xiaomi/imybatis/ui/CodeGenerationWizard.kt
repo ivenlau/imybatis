@@ -62,6 +62,9 @@ class CodeGenerationWizard(
     private val generateControllerCheckBox = JCheckBox("生成 Controller", false)
     private val useLombokCheckBox = JCheckBox("使用 Lombok", true)
     private val useMyBatisPlusCheckBox = JCheckBox("使用 MyBatis Plus", true)
+    private val generateBatchOperationsCheckBox = JCheckBox("批量操作", false)
+    private val generateInsertOnDuplicateUpdateCheckBox = JCheckBox("插入时更新", false)
+    private val useLocalDateTimeCheckBox = JCheckBox("使用 LocalDateTime", true)
 
     // Step 4: Preview
     private val previewTextArea = JTextArea()
@@ -399,17 +402,31 @@ class CodeGenerationWizard(
         
         gbc.gridx = 0
         gbc.gridy = row++
-        gbc.gridwidth = 2
+        gbc.gridwidth = 1
+        gbc.weightx = 0.5
         panel.add(generateServiceCheckBox, gbc)
-        
-        gbc.gridy = row++
+
+        gbc.gridx = 1
         panel.add(generateControllerCheckBox, gbc)
-        
+
+        gbc.gridx = 0
         gbc.gridy = row++
         panel.add(useLombokCheckBox, gbc)
 
-        gbc.gridy = row++
+        gbc.gridx = 1
         panel.add(useMyBatisPlusCheckBox, gbc)
+
+        gbc.gridx = 0
+        gbc.gridy = row++
+        panel.add(generateBatchOperationsCheckBox, gbc)
+
+        gbc.gridx = 1
+        panel.add(generateInsertOnDuplicateUpdateCheckBox, gbc)
+
+        gbc.gridx = 0
+        gbc.gridy = row++
+        gbc.gridwidth = 2
+        panel.add(useLocalDateTimeCheckBox, gbc)
 
         return panel
     }
@@ -582,7 +599,11 @@ class CodeGenerationWizard(
                         className = className,
                         generateService = generateServiceCheckBox.isSelected,
                         generateController = generateControllerCheckBox.isSelected,
-                        useMyBatisPlus = useMyBatisPlusCheckBox.isSelected
+                        useMyBatisPlus = useMyBatisPlusCheckBox.isSelected,
+                        useLombok = useLombokCheckBox.isSelected,
+                        generateBatchOperations = generateBatchOperationsCheckBox.isSelected,
+                        generateInsertOnDuplicateUpdate = generateInsertOnDuplicateUpdateCheckBox.isSelected,
+                        useLocalDateTime = useLocalDateTimeCheckBox.isSelected
                     )
 
                     generatedCodes[tableName] = generatedCode
@@ -815,7 +836,11 @@ class CodeGenerationWizard(
                     className = className,
                     generateService = generateServiceCheckBox.isSelected,
                     generateController = generateControllerCheckBox.isSelected,
-                    useMyBatisPlus = useMyBatisPlusCheckBox.isSelected
+                    useMyBatisPlus = useMyBatisPlusCheckBox.isSelected,
+                    useLombok = useLombokCheckBox.isSelected,
+                    generateBatchOperations = generateBatchOperationsCheckBox.isSelected,
+                    generateInsertOnDuplicateUpdate = generateInsertOnDuplicateUpdateCheckBox.isSelected,
+                    useLocalDateTime = useLocalDateTimeCheckBox.isSelected
                 )
 
                 // Write Entity

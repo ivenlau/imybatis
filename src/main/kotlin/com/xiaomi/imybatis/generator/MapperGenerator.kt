@@ -1,5 +1,7 @@
 package com.xiaomi.imybatis.generator
 
+import com.xiaomi.imybatis.database.ColumnMetadata
+import com.xiaomi.imybatis.database.TableMetadata
 import com.xiaomi.imybatis.template.TemplateEngine
 
 /**
@@ -15,19 +17,59 @@ class MapperGenerator(private val templateEngine: TemplateEngine) {
         mapperName: String,
         entityName: String,
         entityPackage: String,
-        useMyBatisPlus: Boolean = true
+        useMyBatisPlus: Boolean = true,
+        tableMetadata: TableMetadata? = null,
+        useLocalDateTime: Boolean = true,
+        generateBatchOperations: Boolean = false,
+        generateInsertOnDuplicateUpdate: Boolean = false
     ): String {
+        // Get primary key column info
+        val primaryKeyColumns = tableMetadata?.columns?.filter { it.isPrimaryKey } ?: emptyList()
+        val primaryKeyColumn = if (primaryKeyColumns.size == 1) primaryKeyColumns[0] else null
+        val primaryKeyType = primaryKeyColumn?.let { columnTypeToJavaType(it, useLocalDateTime) }
+
         val dataModel = mapOf(
             "packageName" to packageName,
             "mapperName" to mapperName,
             "entityName" to entityName,
             "entityPackage" to entityPackage,
             "entityFqn" to "$entityPackage.$entityName",
-            "useMyBatisPlus" to useMyBatisPlus
+            "useMyBatisPlus" to useMyBatisPlus,
+            "hasPrimaryKey" to (primaryKeyColumn != null),
+            "primaryKeyType" to (primaryKeyType ?: entityName),
+            "primaryKeyParam" to (if (primaryKeyColumn != null) camelCase(primaryKeyColumn.name) else "id"),
+            "generateBatchOperations" to generateBatchOperations,
+            "generateInsertOnDuplicateUpdate" to generateInsertOnDuplicateUpdate
         )
 
         val template = getDefaultMapperTemplate()
         return templateEngine.processString(template, dataModel)
+    }
+
+    private fun camelCase(name: String): String {
+        val parts = name.split("_")
+        return if (parts.isEmpty()) name else {
+            parts[0].lowercase() + parts.drop(1).joinToString("") {
+                it.lowercase().replaceFirstChar { char -> char.uppercaseChar() }
+            }
+        }
+    }
+
+    private fun columnTypeToJavaType(column: ColumnMetadata, useLocalDateTime: Boolean = true): String {
+        return when (column.type.uppercase()) {
+            "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT" -> "Integer"
+            "BIGINT" -> "Long"
+            "DECIMAL", "NUMERIC" -> "java.math.BigDecimal"
+            "FLOAT", "REAL" -> "Float"
+            "DOUBLE" -> "Double"
+            "BOOLEAN", "BIT" -> "Boolean"
+            "CHAR", "VARCHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT" -> "String"
+            "DATE" -> if (useLocalDateTime) "java.time.LocalDate" else "java.util.Date"
+            "TIME" -> if (useLocalDateTime) "java.time.LocalTime" else "java.util.Date"
+            "DATETIME", "TIMESTAMP" -> if (useLocalDateTime) "java.time.LocalDateTime" else "java.util.Date"
+            "BLOB", "BYTEA" -> "byte[]"
+            else -> "String"
+        }
     }
 
     private fun getDefaultMapperTemplate(): String {
@@ -38,6 +80,10 @@ import ${'$'}{entityFqn};
 <#if useMyBatisPlus>
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+</#if>
+<#if !useMyBatisPlus>
+import java.util.List;
+import org.apache.ibatis.annotations.Param;
 </#if>
 
 /**
@@ -50,7 +96,60 @@ public interface ${'$'}{mapperName} extends BaseMapper<${'$'}{entityName}> {
 }
 <#else>
 public interface ${'$'}{mapperName} {
-    // Add your custom methods here
+
+    /**
+     * Select by primary key
+     */
+    ${'$'}{entityName} selectById(@Param("${'$'}{primaryKeyParam}") ${'$'}{primaryKeyType} ${'$'}{primaryKeyParam});
+
+    /**
+     * Select all records
+     */
+    List<${'$'}{entityName}> selectList();
+
+    /**
+     * Insert a record
+     */
+    int insert(${'$'}{entityName} ${'$'}{entityName?uncap_first});
+
+    /**
+     * Update by primary key
+     */
+    int updateById(${'$'}{entityName} ${'$'}{entityName?uncap_first});
+
+    /**
+     * Delete by primary key
+     */
+    int deleteById(@Param("${'$'}{primaryKeyParam}") ${'$'}{primaryKeyType} ${'$'}{primaryKeyParam});
+
+<#if generateBatchOperations>
+    /**
+     * Batch insert
+     */
+    int batchInsert(@Param("list") List<${'$'}{entityName}> list);
+
+<#if generateInsertOnDuplicateUpdate>
+    /**
+     * Batch insert on duplicate update
+     */
+    int batchInsertOnDuplicate(@Param("list") List<${'$'}{entityName}> list);
+
+</#if>
+    /**
+     * Batch update
+     */
+    int batchUpdate(@Param("list") List<${'$'}{entityName}> list);
+
+    /**
+     * Batch delete
+     */
+    int batchDelete(@Param("list") List<${'$'}{entityName}> list);
+
+    /**
+     * Batch delete by IDs
+     */
+    int batchDeleteByIds(@Param("list") List<${'$'}{primaryKeyType}> list);
+</#if>
 }
 </#if>
         """.trimIndent()
