@@ -12,10 +12,13 @@ import com.xiaomi.imybatis.ImybatisBundle
 import com.xiaomi.imybatis.database.PsiMetadataProvider
 import com.xiaomi.imybatis.ui.CodeGenerationWizard
 
-class DatabaseGenerateAction : AnAction(
-    { ImybatisBundle.message("action.database.generate") },
-    { ImybatisBundle.message("action.database.generate") }
-) {
+class DatabaseGenerateAction : AnAction() {
+
+    init {
+        val templatePresentation = templatePresentation
+        templatePresentation.text = ImybatisBundle.message("action.database.generate")
+        templatePresentation.description = ImybatisBundle.message("action.database.generate")
+    }
 
     override fun update(e: AnActionEvent) {
         // 只要有项目就显示菜单项
