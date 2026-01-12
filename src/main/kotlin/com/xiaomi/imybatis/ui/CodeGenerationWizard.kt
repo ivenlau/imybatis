@@ -232,6 +232,14 @@ class CodeGenerationWizard(
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.weightx = 1.0
         dataSourceUrlField.preferredSize = java.awt.Dimension(300, 25)
+
+        // Add URL listener to auto-fill database and dialect
+        dataSourceUrlField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
+            override fun insertUpdate(e: javax.swing.event.DocumentEvent) = parseUrlAndAutoFill()
+            override fun removeUpdate(e: javax.swing.event.DocumentEvent) = parseUrlAndAutoFill()
+            override fun changedUpdate(e: javax.swing.event.DocumentEvent) = parseUrlAndAutoFill()
+        })
+
         panel.add(dataSourceUrlField, gbc)
 
         gbc.gridx = 0
@@ -278,6 +286,60 @@ class CodeGenerationWizard(
         panel.add(dialectComboBox, gbc)
 
         return panel
+    }
+
+    /**
+     * Parse the database URL and auto-fill database and dialect fields
+     * Supports two formats:
+     * 1. Full JDBC URL: jdbc:mysql://host:port/database or jdbc:postgresql://host:port/database
+     * 2. Host:Port format (no auto-fill)
+     */
+    private fun parseUrlAndAutoFill() {
+        val url = dataSourceUrlField.text.trim()
+
+        if (url.isEmpty()) {
+            return
+        }
+
+        // Check if it's a full JDBC URL
+        when {
+            // MySQL JDBC URL
+            url.matches(Regex("^jdbc:mysql://.+")) -> {
+                parseJdbcUrl(url, "MySQL")
+            }
+            // PostgreSQL JDBC URL
+            url.matches(Regex("^jdbc:postgresql://.+")) -> {
+                parseJdbcUrl(url, "PostgreSQL")
+            }
+            // Other formats (host:port) - do nothing
+            else -> {
+                // Don't auto-fill for non-JDBC URLs
+            }
+        }
+    }
+
+    /**
+     * Parse JDBC URL and extract database name
+     */
+    private fun parseJdbcUrl(url: String, dialect: String) {
+        try {
+            // Remove jdbc:prefix://
+            val withoutPrefix = url.substringAfter("://")
+
+            // Extract database name (last part after /)
+            val databaseName = withoutPrefix.substringAfterLast("/").substringBefore("?")
+
+            // Only auto-fill if database name is not empty
+            if (databaseName.isNotEmpty()) {
+                databaseField.text = databaseName
+            }
+
+            // Auto-fill dialect
+            dialectComboBox.selectedItem = dialect
+
+        } catch (e: Exception) {
+            // If parsing fails, just ignore and let user fill manually
+        }
     }
 
     private fun createTableSelectionStep(): JPanel {
@@ -506,21 +568,38 @@ class CodeGenerationWizard(
 
             ensureDriverLoaded(dialect.getDriverClassName())
 
-            val url = dataSourceUrlField.text
+            val urlInput = dataSourceUrlField.text.trim()
             val username = usernameField.text
             val password = String(passwordField.password)
             val database = databaseField.text
-            
-            if (url.isBlank() || username.isBlank() || database.isBlank()) {
+
+            if (urlInput.isBlank() || username.isBlank() || database.isBlank()) {
                 return
             }
-            
-            val fullUrl = when (dialect) {
-                is MySqlDialect -> "$url$database?useSSL=false&serverTimezone=UTC"
-                is PostgreSqlDialect -> "$url$database"
-                else -> url
+
+            // Build full JDBC URL based on input format
+            val fullUrl = when {
+                // Full JDBC URL already provided
+                urlInput.startsWith("jdbc:") -> {
+                    // Add parameters if not present
+                    when (dialect) {
+                        is MySqlDialect -> {
+                            if (urlInput.contains("?")) urlInput
+                            else "$urlInput?useSSL=false&serverTimezone=UTC"
+                        }
+                        else -> urlInput
+                    }
+                }
+                // Host:Port format (simplified)
+                else -> {
+                    when (dialect) {
+                        is MySqlDialect -> "jdbc:mysql://$urlInput/$database?useSSL=false&serverTimezone=UTC"
+                        is PostgreSqlDialect -> "jdbc:postgresql://$urlInput/$database"
+                        else -> urlInput
+                    }
+                }
             }
-            
+
             connection = DriverManager.getConnection(fullUrl, username, password)
             metadataProvider = JdbcMetadataProvider(connection!!, dialect)
 

@@ -2,7 +2,6 @@
     <actions>
         <action id="imybatis.DatabaseGenerateCode"
                 class="com.xiaomi.imybatis.actions.DatabaseGenerateAction"
-                text="生成 MyBatis 代码"
                 description="从数据库生成 MyBatis 代码">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
             <!-- 同时添加到项目视图右键菜单，以防万一 -->

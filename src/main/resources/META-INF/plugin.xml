@@ -56,7 +56,6 @@
     <actions>
         <action id="imybatis.GenerateCode"
                 class="com.xiaomi.imybatis.actions.GenerateCodeAction"
-                text="生成 MyBatis 代码"
                 description="打开代码生成向导">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>

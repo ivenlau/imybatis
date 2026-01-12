@@ -9,14 +9,17 @@ import com.xiaomi.imybatis.ui.CodeGenerationWizard
 /**
  * Action to open code generation wizard
  */
-class GenerateCodeAction : AnAction() {
-    
+class GenerateCodeAction : AnAction(
+    { ImybatisBundle.message("action.generate.title") },
+    { ImybatisBundle.message("action.generate.title") }
+) {
+
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val wizard = CodeGenerationWizard(project)
         wizard.show()
     }
-    
+
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled = e.project != null
     }

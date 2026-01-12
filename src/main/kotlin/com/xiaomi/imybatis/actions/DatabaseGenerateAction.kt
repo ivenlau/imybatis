@@ -8,10 +8,14 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.psi.PsiElement
+import com.xiaomi.imybatis.ImybatisBundle
 import com.xiaomi.imybatis.database.PsiMetadataProvider
 import com.xiaomi.imybatis.ui.CodeGenerationWizard
 
-class DatabaseGenerateAction : AnAction() {
+class DatabaseGenerateAction : AnAction(
+    { ImybatisBundle.message("action.database.generate") },
+    { ImybatisBundle.message("action.database.generate") }
+) {
 
     override fun update(e: AnActionEvent) {
         // 只要有项目就显示菜单项
