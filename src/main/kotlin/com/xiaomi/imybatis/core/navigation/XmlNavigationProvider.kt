@@ -33,23 +33,31 @@ class XmlNavigationProvider : GotoDeclarationHandler {
 
         val namespace = rootTag.getAttributeValue("namespace") ?: return null
 
-        // Handle navigation from statement id to Mapper method
-        if (xmlTag.name in listOf("select", "insert", "update", "delete")) {
-            val id = xmlTag.getAttributeValue("id") ?: return null
-            return navigateToMapperMethod(project, namespace, id)
-        }
-
-        // Handle navigation from resultMap reference to definition
-        if (sourceElement is XmlAttributeValue && sourceElement.parent is XmlTag) {
-            val parentTag = sourceElement.parent as? XmlTag ?: return null
-            if (parentTag.name in listOf("select", "insert", "update", "delete")) {
-                val xmlAttribute = PsiTreeUtil.getParentOfType(sourceElement, com.intellij.psi.xml.XmlAttribute::class.java)
-                val attributeName = xmlAttribute?.name
-                if (attributeName == "resultMap") {
-                    val resultMapId = sourceElement.value
-                    return navigateToResultMap(project, namespace, resultMapId, xmlFile)
+        // Check if sourceElement is inside an attribute value
+        val attributeValue = PsiTreeUtil.getParentOfType(sourceElement, XmlAttributeValue::class.java)
+        if (attributeValue != null) {
+            val attribute = PsiTreeUtil.getParentOfType(attributeValue, com.intellij.psi.xml.XmlAttribute::class.java) ?: return null
+            val attributeName = attribute.name
+            
+            when (attributeName) {
+                "id" -> {
+                    if (xmlTag.name in listOf("select", "insert", "update", "delete")) {
+                        return navigateToMapperMethod(project, namespace, attributeValue.value)
+                    }
+                }
+                "resultMap" -> {
+                    return navigateToResultMap(project, namespace, attributeValue.value, xmlFile)
+                }
+                "resultType", "parameterType" -> {
+                    return navigateToJavaClass(project, attributeValue.value)
+                }
+                "refid" -> {
+                     if (xmlTag.name == "include") {
+                         return navigateToSqlFragment(project, namespace, attributeValue.value, xmlFile)
+                     }
                 }
             }
+            return null
         }
 
         return null
@@ -77,16 +85,51 @@ class XmlNavigationProvider : GotoDeclarationHandler {
         resultMapId: String,
         xmlFile: com.intellij.psi.xml.XmlFile
     ): Array<PsiElement>? {
-        val rootTag = xmlFile.rootTag ?: return null
-        val resultMapTags = rootTag.findSubTags("resultMap")
+        // Handle simple case: resultMap in the same file
+        if (!resultMapId.contains(".")) {
+            val rootTag = xmlFile.rootTag ?: return null
+            val resultMapTags = rootTag.findSubTags("resultMap")
 
-        for (tag in resultMapTags) {
-            val id = tag.getAttributeValue("id") ?: continue
-            if (id == resultMapId) {
-                return arrayOf(tag)
+            for (tag in resultMapTags) {
+                val id = tag.getAttributeValue("id") ?: continue
+                if (id == resultMapId) {
+                    return arrayOf(tag)
+                }
             }
         }
+        // TODO: Handle cross-file resultMap references if needed
+        return null
+    }
 
+    /**
+     * Navigate to Java Class
+     */
+    private fun navigateToJavaClass(project: Project, className: String): Array<PsiElement>? {
+        val psiClass = findPsiClass(project, className) ?: return null
+        return arrayOf(psiClass)
+    }
+
+    /**
+     * Navigate to SQL Fragment
+     */
+    private fun navigateToSqlFragment(
+        project: Project,
+        namespace: String,
+        refId: String,
+        xmlFile: com.intellij.psi.xml.XmlFile
+    ): Array<PsiElement>? {
+        // Handle simple case: sql fragment in the same file
+        if (!refId.contains(".")) {
+            val rootTag = xmlFile.rootTag ?: return null
+            val sqlTags = rootTag.findSubTags("sql")
+
+            for (tag in sqlTags) {
+                val id = tag.getAttributeValue("id") ?: continue
+                if (id == refId) {
+                    return arrayOf(tag)
+                }
+            }
+        }
         return null
     }
 

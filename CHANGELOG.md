@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Native shortcut key to navigate between Mapper interfaces, XML files, and Entity classes
+
+## [1.0.0] - 2025-01-12
 ### Added
 - Database tool window integration for code generation
 - Code generation wizard with multi-step UI

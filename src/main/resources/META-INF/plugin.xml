@@ -26,7 +26,7 @@
         <fileBasedIndex implementation="com.xiaomi.imybatis.core.index.EntityIndexExtension"/>
         
         <!-- Navigation providers -->
-        <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.MapperNavigationProvider"/>
+        <definitionsScopedSearch implementation="com.xiaomi.imybatis.core.navigation.MapperImplementationSearch"/>
         <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.XmlNavigationProvider"/>
         <gotoDeclarationHandler implementation="com.xiaomi.imybatis.core.navigation.EntityNavigationProvider"/>
         

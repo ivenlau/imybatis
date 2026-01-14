@@ -4,20 +4,20 @@
 IntelliJ Platform plugin for MyBatis/MyBatis Plus development that enhances productivity with intelligent code completion, navigation, validation, and code generation capabilities.
 
 ## Key Features:
-- Navigate between Mapper interfaces, XML files, and Entity classes
+- Native shortcut key to navigate between Mapper interfaces, XML files, and Entity classes
+- Generate Entity, Mapper, XML, Service, and Controller code from database tables
 - Intelligent code completion for SQL keywords, table/column names, and parameters
 - Semantic validation including ID consistency checks and type matching
-- Generate Entity, Mapper, XML, Service, and Controller code from database tables
 - MyBatis Plus support with BaseMapper analysis and Wrapper column name completion
 - Support for MySQL/MariaDB and PostgreSQL dialects
 <!-- Plugin description end -->
 
 ## Features
 
-- **Code Navigation**: Navigate between Mapper interfaces, XML files, and Entity classes
+- **Code Navigation**: Native shortcut key to navigate between Mapper interfaces, XML files, and Entity classes
+- **Code Generation**: Generate Entity, Mapper, XML, Service, and Controller code from database tables
 - **Intelligent Code Completion**: SQL keywords, table/column names, and parameter completion
 - **Semantic Validation**: ID consistency checks, type matching validation
-- **Code Generation**: Generate Entity, Mapper, XML, Service, and Controller code from database tables
 - **MyBatis Plus Support**: BaseMapper analysis and Wrapper column name completion
 - **Database Support**: MySQL/MariaDB and PostgreSQL dialects
 
