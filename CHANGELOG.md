@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Miss @mapper annotation in mybatis mode
+
+## [1.0.1] - 2025-01-15
 ### Changed
 - Native shortcut key to navigate between Mapper interfaces, XML files, and Entity classes
 
